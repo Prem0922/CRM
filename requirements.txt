@@ -9,7 +9,7 @@ bcrypt
 pyjwt
 psycopg2-binary
 
-
+email-validator
 
 # Optional: for development and code quality
 black
