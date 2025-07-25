@@ -1,8 +1,16 @@
-mss
-pytesseract
-opencv-python
-pillow
-pyautogui 
-paddleocr
-paddlepaddle 
-easyocr 
+# Core backend dependencies
+fastapi
+uvicorn
+sqlalchemy
+python-dotenv
+pydantic
+python-multipart
+bcrypt
+pyjwt
+psycopg2-binary
+
+
+
+# Optional: for development and code quality
+black
+pylint
