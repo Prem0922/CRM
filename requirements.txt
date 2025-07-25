@@ -1,0 +1,8 @@
+mss
+pytesseract
+opencv-python
+pillow
+pyautogui 
+paddleocr
+paddlepaddle 
+easyocr 
