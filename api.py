@@ -421,4 +421,238 @@ def delete_fare_dispute(dispute_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Fare Dispute not found")
     db.delete(db_dispute)
     db.commit()
-    return {"message": "Fare Dispute deleted successfully"} 
+    return {"message": "Fare Dispute deleted successfully"}
+
+# --- POS Integration Endpoints ---
+
+class IssueCardRequest(BaseModel):
+    card_id: str
+    card_type: str
+    customer_id: str
+    issue_date: str
+
+@router.post("/cards/issue", response_model=CardResponse)
+def issue_card(card_data: IssueCardRequest, db: Session = Depends(get_db)):
+    """Issue a new transit card"""
+    # Check if customer exists
+    customer = db.query(Customer).filter(Customer.id == card_data.customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Check if card already exists
+    existing_card = db.query(Card).filter(Card.id == card_data.card_id).first()
+    if existing_card:
+        raise HTTPException(status_code=400, detail="Card ID already exists")
+    
+    # Create new card
+    db_card = Card(
+        id=card_data.card_id,
+        type=card_data.card_type,
+        status="Active",
+        balance=0.0,
+        customer_id=card_data.customer_id,
+        product="Standard",
+        issue_date=datetime.fromisoformat(card_data.issue_date.replace('Z', '+00:00'))
+    )
+    db.add(db_card)
+    db.commit()
+    db.refresh(db_card)
+    return db_card
+
+class ProductAddRequest(BaseModel):
+    product: str
+    value: float = 0.0
+
+@router.post("/cards/{card_id}/products")
+def add_product(card_id: str, req: ProductAddRequest, db: Session = Depends(get_db)):
+    """Add a product to a card"""
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    card.product = req.product
+    if req.value > 0:
+        card.balance += req.value
+    
+    db.commit()
+    db.refresh(card)
+    return {
+        "message": f"Product {req.product} added to card {card_id}",
+        "card_id": card.id,
+        "new_balance": card.balance
+    }
+
+class ReloadRequest(BaseModel):
+    amount: float
+
+@router.post("/cards/{card_id}/reload")
+def reload_card(card_id: str, req: ReloadRequest, db: Session = Depends(get_db)):
+    """Reload funds onto a card"""
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    if req.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    
+    card.balance += req.amount
+    db.commit()
+    db.refresh(card)
+    return {
+        "message": f"Card {card_id} reloaded with ${req.amount}",
+        "card_id": card.id,
+        "new_balance": card.balance
+    }
+
+@router.get("/cards/{card_id}/balance")
+def get_card_balance(card_id: str, db: Session = Depends(get_db)):
+    """Get card balance"""
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    return {
+        "card_id": card.id,
+        "balance": card.balance,
+        "status": card.status,
+        "type": card.type
+    }
+
+class PaymentSimRequest(BaseModel):
+    card_id: str
+    amount: float
+    method: str
+
+@router.post("/payment/simulate")
+def simulate_payment(req: PaymentSimRequest, db: Session = Depends(get_db)):
+    """Simulate a payment transaction"""
+    card = db.query(Card).filter(Card.id == req.card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    if card.balance < req.amount:
+        return {
+            "success": False,
+            "message": "Insufficient balance",
+            "current_balance": card.balance,
+            "required_amount": req.amount
+        }
+    
+    card.balance -= req.amount
+    db.commit()
+    db.refresh(card)
+    
+    return {
+        "success": True,
+        "message": f"Payment of ${req.amount} by {req.method} successful",
+        "card_id": card.id,
+        "new_balance": card.balance,
+        "payment_method": req.method
+    }
+
+@router.get("/cards/{card_id}/transactions")
+def get_card_transactions(card_id: str, db: Session = Depends(get_db)):
+    """Get transaction history for a card"""
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    # Get trips for this card
+    trips = db.query(Trip).filter(Trip.card_id == card_id).order_by(Trip.start_time.desc()).all()
+    
+    # Get tap history for this card's customer
+    tap_history = db.query(TapHistory).filter(TapHistory.customer_id == card.customer_id).order_by(TapHistory.tap_time.desc()).all()
+    
+    return {
+        "card_id": card_id,
+        "card_balance": card.balance,
+        "trips": [{
+            "trip_id": t.id,
+            "start_time": t.start_time,
+            "end_time": t.end_time,
+            "entry_location": t.entry_location,
+            "exit_location": t.exit_location,
+            "fare": t.fare,
+            "route": t.route,
+            "operator": t.operator,
+            "transit_mode": t.transit_mode
+        } for t in trips],
+        "tap_history": [{
+            "tap_id": th.id,
+            "tap_time": th.tap_time,
+            "location": th.location,
+            "device_id": th.device_id,
+            "transit_mode": th.transit_mode,
+            "direction": th.direction,
+            "result": th.result
+        } for th in tap_history]
+    }
+
+@router.get("/reports/summary")
+def get_reports_summary(db: Session = Depends(get_db)):
+    """Get summary reports for dashboard"""
+    total_cards = db.query(func.count(Card.id)).scalar()
+    total_customers = db.query(func.count(Customer.id)).scalar()
+    total_trips = db.query(func.count(Trip.id)).scalar()
+    total_balance = db.query(func.sum(Card.balance)).scalar() or 0.0
+    total_cases = db.query(func.count(Case.id)).scalar()
+    total_tap_entries = db.query(func.count(TapHistory.id)).scalar()
+    
+    return {
+        "total_cards": total_cards,
+        "total_customers": total_customers,
+        "total_trips": total_trips,
+        "total_balance": round(total_balance, 2),
+        "total_cases": total_cases,
+        "total_tap_entries": total_tap_entries,
+        "generated_at": datetime.now().isoformat()
+    }
+
+class CardTapRequest(BaseModel):
+    card_id: str
+    location: str
+    device_id: str
+    transit_mode: str
+    direction: str
+
+@router.post("/simulate/cardTap")
+def simulate_card_tap(req: CardTapRequest, db: Session = Depends(get_db)):
+    """Simulate a card tap event"""
+    card = db.query(Card).filter(Card.id == req.card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    # Check if card has sufficient balance for a trip
+    min_fare = 2.50  # Minimum fare for a trip
+    if card.balance < min_fare:
+        result = "Insufficient Balance"
+    else:
+        result = "Tap Successful"
+        # Deduct minimum fare
+        card.balance -= min_fare
+    
+    # Create tap history entry
+    tap_entry = TapHistory(
+        id=f"TH{str(len(db.query(TapHistory).all()) + 1).zfill(6)}",
+        tap_time=datetime.now(),
+        location=req.location,
+        device_id=req.device_id,
+        transit_mode=req.transit_mode,
+        direction=req.direction,
+        customer_id=card.customer_id,
+        result=result
+    )
+    
+    db.add(tap_entry)
+    db.commit()
+    db.refresh(tap_entry)
+    
+    return {
+        "tap_id": tap_entry.id,
+        "card_id": req.card_id,
+        "result": result,
+        "location": req.location,
+        "transit_mode": req.transit_mode,
+        "direction": req.direction,
+        "remaining_balance": card.balance,
+        "tap_time": tap_entry.tap_time.isoformat()
+    } 
