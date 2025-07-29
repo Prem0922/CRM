@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -8,8 +8,17 @@ from pydantic import BaseModel, ConfigDict
 from fastapi import Body
 from sqlalchemy import func
 import uuid
+import os
 
 router = APIRouter()
+
+# API Key authentication
+API_KEY = os.getenv("API_KEY", "mysecretkey")
+
+async def verify_api_key(x_api_key: str = Header(...)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return x_api_key
 
 # Standard response models for POS API
 class StandardResponse(BaseModel):
@@ -158,7 +167,7 @@ class FareDisputeResponse(FareDisputeBase):
 
 # Customer endpoints
 @router.get("/customers/", response_model=List[CustomerResponse])
-def get_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     customers = db.query(Customer).offset(skip).limit(limit).all()
     return customers
 
@@ -206,7 +215,7 @@ def delete_customer(customer_id: str, db: Session = Depends(get_db)):
 
 # Card endpoints
 @router.get("/cards/", response_model=List[CardResponse])
-def get_cards(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_cards(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     cards = db.query(Card).offset(skip).limit(limit).all()
     return cards
 
@@ -454,7 +463,7 @@ class IssueCardRequest(BaseModel):
     issue_date: str
 
 @router.post("/api/cards/issue", response_model=StandardResponse)
-def issue_card_api(card_data: IssueCardRequest, db: Session = Depends(get_db)):
+def issue_card_api(card_data: IssueCardRequest, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     """Issue a new transit card - POS API endpoint"""
     transaction_id = str(uuid.uuid4())
     timestamp = datetime.now()
@@ -525,7 +534,7 @@ class ProductAddRequest(BaseModel):
     value: float = 0.0
 
 @router.post("/api/cards/{card_id}/products", response_model=StandardResponse)
-def add_product_api(card_id: str, req: ProductAddRequest, db: Session = Depends(get_db)):
+def add_product_api(card_id: str, req: ProductAddRequest, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     """Add a product to a card - POS API endpoint"""
     transaction_id = str(uuid.uuid4())
     timestamp = datetime.now()
@@ -574,7 +583,7 @@ class ReloadRequest(BaseModel):
     amount: float
 
 @router.post("/api/cards/{card_id}/reload", response_model=StandardResponse)
-def reload_card_api(card_id: str, req: ReloadRequest, db: Session = Depends(get_db)):
+def reload_card_api(card_id: str, req: ReloadRequest, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     """Reload funds onto a card - POS API endpoint"""
     transaction_id = str(uuid.uuid4())
     timestamp = datetime.now()
