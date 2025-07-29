@@ -180,15 +180,32 @@ def get_customer(customer_id: str, db: Session = Depends(get_db)):
 
 @router.post("/customers/", response_model=CustomerResponse)
 def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
-    db_customer = Customer(
-        id=f"C{str(len(db.query(Customer).all()) + 1).zfill(3)}",
-        **customer.dict(),
-        join_date=datetime.now()
-    )
-    db.add(db_customer)
-    db.commit()
-    db.refresh(db_customer)
-    return db_customer
+    try:
+        # Check if customer with same email or name already exists
+        existing_customer = db.query(Customer).filter(
+            (Customer.email == customer.email) | (Customer.name == customer.name)
+        ).first()
+        
+        if existing_customer:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Customer with email '{customer.email}' or name '{customer.name}' already exists"
+            )
+        
+        db_customer = Customer(
+            id=f"C{str(len(db.query(Customer).all()) + 1).zfill(3)}",
+            **customer.dict(),
+            join_date=datetime.now()
+        )
+        db.add(db_customer)
+        db.commit()
+        db.refresh(db_customer)
+        return db_customer
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create customer: {str(e)}")
 
 @router.put("/customers/{customer_id}", response_model=CustomerResponse)
 def update_customer(customer_id: str, customer: CustomerUpdate, db: Session = Depends(get_db)):
@@ -228,21 +245,43 @@ def get_card(card_id: str, db: Session = Depends(get_db)):
 
 @router.post("/cards/", response_model=CardResponse)
 def create_card(card: CardCreate, db: Session = Depends(get_db)):
-    # Use provided issue_date or current time
-    issue_date = card.issue_date if card.issue_date else datetime.now()
-    
-    db_card = Card(
-        id=card.id,
-        type=card.type,
-        status=card.status,
-        balance=card.balance,
-        customer_id=card.customer_id,
-        issue_date=issue_date
-    )
-    db.add(db_card)
-    db.commit()
-    db.refresh(db_card)
-    return db_card
+    try:
+        # Check if card with same ID already exists
+        existing_card = db.query(Card).filter(Card.id == card.id).first()
+        if existing_card:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Card with ID '{card.id}' already exists"
+            )
+        
+        # Check if customer exists
+        customer = db.query(Customer).filter(Customer.id == card.customer_id).first()
+        if not customer:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Customer with ID '{card.customer_id}' not found"
+            )
+        
+        # Use provided issue_date or current time
+        issue_date = card.issue_date if card.issue_date else datetime.now()
+        
+        db_card = Card(
+            id=card.id,
+            type=card.type,
+            status=card.status,
+            balance=card.balance,
+            customer_id=card.customer_id,
+            issue_date=issue_date
+        )
+        db.add(db_card)
+        db.commit()
+        db.refresh(db_card)
+        return db_card
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create card: {str(e)}")
 
 @router.put("/cards/{card_id}", response_model=CardResponse)
 def update_card(card_id: str, card: CardUpdate, db: Session = Depends(get_db)):
