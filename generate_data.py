@@ -85,7 +85,6 @@ def create_customers(count):
             name=name,
             email=email,
             phone=fake.phone_number(),
-            address=fake.address().replace('\n', ', '),
             notifications="Email Enabled",
             join_date=datetime.now() - timedelta(days=random.randint(0, 365))
         )
@@ -101,7 +100,6 @@ def create_cards(customers):
             type=random.choice(CARD_TYPES),
             status=random.choice(CARD_STATUSES),
             balance=round(random.uniform(20, 200), 2),
-            product="Standard",
             customer_id=customer.id,
             issue_date=datetime.now() - timedelta(days=random.randint(0, 180))
         )
