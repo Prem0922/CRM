@@ -48,8 +48,9 @@ def get_db_info():
 def test_db_connection():
     try:
         from database import engine
+        from sqlalchemy import text
         with engine.connect() as conn:
-            result = conn.execute("SELECT version()")
+            result = conn.execute(text("SELECT version()"))
             version = result.fetchone()[0]
             return {
                 "status": "success",
@@ -63,23 +64,24 @@ def test_db_connection():
 def get_schema_info():
     try:
         from database import engine
+        from sqlalchemy import text
         with engine.connect() as conn:
             # Get customers table schema
-            customers_result = conn.execute("""
+            customers_result = conn.execute(text("""
                 SELECT column_name, data_type, is_nullable 
                 FROM information_schema.columns 
                 WHERE table_name = 'customers' 
                 ORDER BY ordinal_position
-            """)
+            """))
             customers_schema = [{"column": row[0], "type": row[1], "nullable": row[2]} for row in customers_result]
             
             # Get cards table schema
-            cards_result = conn.execute("""
+            cards_result = conn.execute(text("""
                 SELECT column_name, data_type, is_nullable 
                 FROM information_schema.columns 
                 WHERE table_name = 'cards' 
                 ORDER BY ordinal_position
-            """)
+            """))
             cards_schema = [{"column": row[0], "type": row[1], "nullable": row[2]} for row in cards_result]
             
             return {
