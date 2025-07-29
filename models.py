@@ -11,7 +11,6 @@ class Customer(Base):
     name = Column(String, nullable=False, unique=True)
     email = Column(String, nullable=False, unique=True)
     phone = Column(String, nullable=False)
-    address = Column(String, nullable=False)
     notifications = Column(String, nullable=False)
     join_date = Column(DateTime, nullable=False, default=datetime.now)
     
@@ -26,7 +25,6 @@ class Card(Base):
     type = Column(String, nullable=False)
     status = Column(String, nullable=False)
     balance = Column(Float, nullable=False)
-    product = Column(String, nullable=False)
     issue_date = Column(DateTime, nullable=False, default=datetime.now)
     customer_id = Column(String, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
     
