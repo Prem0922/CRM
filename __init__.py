@@ -1,10 +1,12 @@
-# This file makes the backend directory a Python package from database import engine
+from database import engine
 from models import Base
 
 def init_db():
-    print("Creating database tables if they don't exist...")
+    print("Dropping all existing tables to fix schema...")
+    Base.metadata.drop_all(bind=engine)
+    print("Creating database tables with correct schema...")
     Base.metadata.create_all(bind=engine)
-    print("Database tables ready!")
+    print("Database tables recreated with correct schema!")
 
 if __name__ == "__main__":
     init_db()
