@@ -230,7 +230,6 @@ def create_card(card: CardCreate, db: Session = Depends(get_db)):
     db_card = Card(
         id=card.id,
         **card.dict(exclude={"id"}),
-        product="Standard",
         issue_date=datetime.now()
     )
     db.add(db_card)
@@ -497,7 +496,6 @@ def issue_card_api(card_data: IssueCardRequest, db: Session = Depends(get_db), a
             status="Active",
             balance=0.0,
             customer_id=card_data.customer_id,
-            product="Standard",
             issue_date=datetime.fromisoformat(card_data.issue_date.replace('Z', '+00:00'))
         )
         db.add(db_card)
@@ -549,7 +547,6 @@ def add_product_api(card_id: str, req: ProductAddRequest, db: Session = Depends(
                 data={"card_id": card_id}
             )
         
-        card.product = req.product
         if req.value > 0:
             card.balance += req.value
         
@@ -668,7 +665,6 @@ def issue_card(card_data: IssueCardRequest, db: Session = Depends(get_db)):
         status="Active",
         balance=0.0,
         customer_id=card_data.customer_id,
-        product="Standard",
         issue_date=datetime.fromisoformat(card_data.issue_date.replace('Z', '+00:00'))
     )
     db.add(db_card)
@@ -683,7 +679,6 @@ def add_product(card_id: str, req: ProductAddRequest, db: Session = Depends(get_
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
     
-    card.product = req.product
     if req.value > 0:
         card.balance += req.value
     
