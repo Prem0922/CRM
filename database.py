@@ -3,18 +3,25 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 
-# Get the absolute path for the database file
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_FILE = "transit_card.db"
-DATABASE_PATH = os.path.join(BASE_DIR, DATABASE_FILE)
+# Check for DATABASE_URL environment variable (for production)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Create SQLite database URL with absolute path
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+if DATABASE_URL:
+    # Use PostgreSQL in production (Render)
+    SQLALCHEMY_DATABASE_URL = DATABASE_URL
+    connect_args = {}
+else:
+    # Use SQLite for local development
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DATABASE_FILE = "transit_card.db"
+    DATABASE_PATH = os.path.join(BASE_DIR, DATABASE_FILE)
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
+    connect_args = {"check_same_thread": False}
 
 # Create SQLAlchemy engine with proper settings
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    connect_args=connect_args,
     echo=True  # Enable SQL logging for debugging
 )
 
