@@ -74,6 +74,7 @@ class CardBase(BaseModel):
     status: str
     balance: float
     customer_id: str
+    issue_date: Optional[datetime] = None
 
 class CardCreate(CardBase):
     pass
@@ -227,10 +228,16 @@ def get_card(card_id: str, db: Session = Depends(get_db)):
 
 @router.post("/cards/", response_model=CardResponse)
 def create_card(card: CardCreate, db: Session = Depends(get_db)):
+    # Use provided issue_date or current time
+    issue_date = card.issue_date if card.issue_date else datetime.now()
+    
     db_card = Card(
         id=card.id,
-        **card.dict(exclude={"id"}),
-        issue_date=datetime.now()
+        type=card.type,
+        status=card.status,
+        balance=card.balance,
+        customer_id=card.customer_id,
+        issue_date=issue_date
     )
     db.add(db_card)
     db.commit()
