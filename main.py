@@ -31,6 +31,65 @@ app.include_router(router)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 # --- Admin endpoints for DB management ---
+@app.get("/admin/db-info")
+def get_db_info():
+    try:
+        from database import engine
+        db_url = str(engine.url)
+        return {
+            "status": "success",
+            "database_type": "PostgreSQL" if "postgresql" in db_url else "SQLite",
+            "connection_string": db_url.split("@")[0] + "@***" if "@" in db_url else db_url
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/admin/db-test")
+def test_db_connection():
+    try:
+        from database import engine
+        with engine.connect() as conn:
+            result = conn.execute("SELECT version()")
+            version = result.fetchone()[0]
+            return {
+                "status": "success",
+                "database_type": "PostgreSQL",
+                "version": version
+            }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/admin/schema-info")
+def get_schema_info():
+    try:
+        from database import engine
+        with engine.connect() as conn:
+            # Get customers table schema
+            customers_result = conn.execute("""
+                SELECT column_name, data_type, is_nullable 
+                FROM information_schema.columns 
+                WHERE table_name = 'customers' 
+                ORDER BY ordinal_position
+            """)
+            customers_schema = [{"column": row[0], "type": row[1], "nullable": row[2]} for row in customers_result]
+            
+            # Get cards table schema
+            cards_result = conn.execute("""
+                SELECT column_name, data_type, is_nullable 
+                FROM information_schema.columns 
+                WHERE table_name = 'cards' 
+                ORDER BY ordinal_position
+            """)
+            cards_schema = [{"column": row[0], "type": row[1], "nullable": row[2]} for row in cards_result]
+            
+            return {
+                "status": "success",
+                "customers_schema": customers_schema,
+                "cards_schema": cards_schema
+            }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.post("/admin/generate-data")
 def generate_data():
     try:
