@@ -54,7 +54,6 @@ class CustomerBase(BaseModel):
     name: str
     email: str
     phone: str
-    address: str
     notifications: str
 
 class CustomerCreate(CustomerBase):
