@@ -99,6 +99,17 @@ def generate_data():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/admin/reset-db")
+def reset_database():
+    try:
+        from database import Base, engine
+        print("Resetting database schema...")
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        return {"status": "success", "message": "Database schema reset successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/admin/delete-db")
 def delete_db():
     try:
