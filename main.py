@@ -15,8 +15,9 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
-        "https://crm-frontend.onrender.com",  # Render frontend URL (update this with your actual URL)
-        "https://pos-frontend.onrender.com"   # POS frontend URL (when you deploy it)
+        "https://crm-frontend.onrender.com",
+        "https://crm-frontend-86aq.onrender.com",  # Your new frontend URL
+        "https://pos-frontend.onrender.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
