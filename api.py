@@ -689,6 +689,23 @@ def get_card_balance(card_id: str, db: Session = Depends(get_db)):
         "type": card.type
     }
 
+@router.get("/cards/random")
+def get_random_card(db: Session = Depends(get_db)):
+    """Get a random card from the database"""
+    import random
+    cards = db.query(Card).all()
+    if not cards:
+        raise HTTPException(status_code=404, detail="No cards found in database")
+    
+    random_card = random.choice(cards)
+    return {
+        "id": random_card.id,
+        "card_number": random_card.id,
+        "balance": random_card.balance,
+        "status": random_card.status,
+        "type": random_card.type
+    }
+
 # --- Original endpoints for backward compatibility ---
 
 @router.post("/cards/issue", response_model=CardResponse)
