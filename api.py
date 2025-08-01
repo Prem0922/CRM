@@ -676,21 +676,8 @@ def reload_card_api(card_id: str, req: ReloadRequest, db: Session = Depends(get_
             data={"card_id": card_id}
         )
 
-@router.get("/cards/{card_id}/balance")
-def get_card_balance(card_id: str, db: Session = Depends(get_db)):
-    """Get card balance"""
-    card = db.query(Card).filter(Card.id == card_id).first()
-    if not card:
-        raise HTTPException(status_code=404, detail="Card not found")
-    return {
-        "card_id": card.id,
-        "balance": card.balance,
-        "status": card.status,
-        "type": card.type
-    }
-
 @router.get("/cards/random")
-def get_random_card(db: Session = Depends(get_db)):
+def get_random_card(db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
     """Get a random card from the database"""
     import random
     cards = db.query(Card).all()
@@ -704,6 +691,19 @@ def get_random_card(db: Session = Depends(get_db)):
         "balance": random_card.balance,
         "status": random_card.status,
         "type": random_card.type
+    }
+
+@router.get("/cards/{card_id}/balance")
+def get_card_balance(card_id: str, db: Session = Depends(get_db)):
+    """Get card balance"""
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    return {
+        "card_id": card.id,
+        "balance": card.balance,
+        "status": card.status,
+        "type": card.type
     }
 
 # --- Original endpoints for backward compatibility ---
