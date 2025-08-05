@@ -4,11 +4,12 @@ from typing import List, Optional
 from datetime import datetime
 from database import SessionLocal, engine
 from models import Customer, Card, Trip, Case, TapHistory, FareDispute
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, validator
 from fastapi import Body
 from sqlalchemy import func
 import uuid
 import os
+import re
 
 router = APIRouter()
 
@@ -52,9 +53,17 @@ def get_db():
 # Pydantic models for request/response
 class CustomerBase(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     phone: str
     notifications: str
+    
+    @validator('email')
+    def validate_email_format(cls, v):
+        # Additional validation beyond EmailStr
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, v):
+            raise ValueError('Invalid email format')
+        return v
 
 class CustomerCreate(CustomerBase):
     pass
