@@ -562,7 +562,7 @@ def issue_card_api(card_data: IssueCardRequest, db: Session = Depends(get_db), a
             type=card_data.card_type,
             status="Active",
             balance=card_data.balance,  # Use provided balance instead of hardcoded 0.0
-            product=card_data.load_product if hasattr(card_data, 'load_product') else None,  # Add product field
+            # Product field removed from Card model
             customer_id=card_data.customer_id,
             issue_date=datetime.fromisoformat(card_data.issue_date.replace('Z', '+00:00'))
         )
@@ -637,7 +637,7 @@ def add_product_api(card_id: str, req: ProductAddRequest, db: Session = Depends(
             message=f"Product {req.product} added to card {card_id}",
             data={
                 "card_id": card.id,
-                "product": card.product,
+                "product": "N/A",
                 "new_balance": card.balance,
                 "value_added": req.value
             }
@@ -968,7 +968,7 @@ def sync_card_to_crm(req: CardSyncRequest, db: Session = Depends(get_db)):
             card.balance += req.amount
             message = f"Card {req.card_id} reloaded with ${req.amount}"
         elif req.action == "add_product" and req.product:
-            card.product = req.product
+            # Product field removed from Card model
             if req.amount:
                 card.balance += req.amount
             message = f"Product {req.product} added to card {req.card_id}"
@@ -988,7 +988,7 @@ def sync_card_to_crm(req: CardSyncRequest, db: Session = Depends(get_db)):
                 "card_id": card.id,
                 "balance": card.balance,
                 "status": card.status,
-                "product": card.product
+                "product": "N/A"
             }
         )
         
@@ -1092,7 +1092,7 @@ def get_crm_card_status(card_id: str, db: Session = Depends(get_db)):
                 "balance": card.balance,
                 "status": card.status,
                 "type": card.type,
-                "product": card.product,
+                "product": "N/A",
                 "issue_date": card.issue_date.isoformat(),
                 "customer_id": card.customer_id,
                 "customer_name": customer.name if customer else None
@@ -1145,7 +1145,7 @@ def get_crm_customer_status(customer_id: str, db: Session = Depends(get_db)):
                     "balance": card.balance,
                     "status": card.status,
                     "type": card.type,
-                    "product": card.product
+                    "product": "N/A"
                 } for card in cards],
                 "total_cards": len(cards),
                 "total_balance": sum(card.balance for card in cards)
