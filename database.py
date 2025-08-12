@@ -28,7 +28,7 @@ engine = create_engine(
 # Create sessionmaker
 SessionLocal = sessionmaker(
     autocommit=False,
-    autoflush=False,  # Changed to False to prevent automatic flushing
+    autoflush=True,  # Changed to True to ensure proper flushing
     bind=engine,
     expire_on_commit=False  # Added to prevent expired objects after commit
 )

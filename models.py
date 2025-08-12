@@ -25,6 +25,7 @@ class Card(Base):
     type = Column(String, nullable=False)
     status = Column(String, nullable=False)
     balance = Column(Float, nullable=False)
+    product = Column(String, nullable=True)  # Added missing product field
     issue_date = Column(DateTime, nullable=False, default=datetime.now)
     customer_id = Column(String, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
     

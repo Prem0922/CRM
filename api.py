@@ -110,7 +110,7 @@ class TripBase(BaseModel):
     card_id: str
 
 class TripCreate(TripBase):
-    pass
+    id: Optional[str] = None  # Allow ID to be passed from POS
 
 class TripUpdate(TripBase):
     pass
@@ -330,10 +330,20 @@ def get_trip(trip_id: str, db: Session = Depends(get_db)):
 
 @router.post("/trips/", response_model=TripResponse)
 def create_trip(trip: TripCreate, db: Session = Depends(get_db)):
-    db_trip = Trip(
-        id=f"T{str(len(db.query(Trip).all()) + 1).zfill(3)}",
-        **trip.dict()
-    )
+    # Check if trip data includes an ID (for POS-generated trips)
+    trip_data = trip.dict()
+    trip_id = trip_data.pop('id', None)  # Remove id from data if present
+    
+    if trip_id:
+        # Use the provided ID (e.g., RID693 from POS)
+        db_trip = Trip(id=trip_id, **trip_data)
+    else:
+        # Auto-generate ID for manually created trips (e.g., T001, T002)
+        db_trip = Trip(
+            id=f"T{str(len(db.query(Trip).all()) + 1).zfill(3)}",
+            **trip_data
+        )
+    
     db.add(db_trip)
     db.commit()
     db.refresh(db_trip)
@@ -514,6 +524,8 @@ class IssueCardRequest(BaseModel):
     card_type: str
     customer_id: str
     issue_date: str
+    balance: float = 0.0  # Add balance field with default value
+    load_product: Optional[str] = None  # Add load_product field
 
 @router.post("/api/cards/issue", response_model=StandardResponse)
 def issue_card_api(card_data: IssueCardRequest, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
@@ -544,17 +556,25 @@ def issue_card_api(card_data: IssueCardRequest, db: Session = Depends(get_db), a
                 data={"card_id": card_data.card_id}
             )
         
-        # Create new card
+        # Create new card with provided balance
         db_card = Card(
             id=card_data.card_id,
             type=card_data.card_type,
             status="Active",
-            balance=0.0,
+            balance=card_data.balance,  # Use provided balance instead of hardcoded 0.0
+            product=card_data.load_product if hasattr(card_data, 'load_product') else None,  # Add product field
             customer_id=card_data.customer_id,
             issue_date=datetime.fromisoformat(card_data.issue_date.replace('Z', '+00:00'))
         )
         db.add(db_card)
+        
+        # Force flush to ensure the object is persisted
+        db.flush()
+        
+        # Commit the transaction
         db.commit()
+        
+        # Refresh to get the latest data
         db.refresh(db_card)
         
         return StandardResponse(
@@ -573,6 +593,8 @@ def issue_card_api(card_data: IssueCardRequest, db: Session = Depends(get_db), a
         )
         
     except Exception as e:
+        # Rollback on error
+        db.rollback()
         return StandardResponse(
             status="error",
             timestamp=timestamp,
@@ -730,12 +752,12 @@ def issue_card(card_data: IssueCardRequest, db: Session = Depends(get_db)):
     if existing_card:
         raise HTTPException(status_code=400, detail="Card ID already exists")
     
-    # Create new card
+    # Create new card with provided balance
     db_card = Card(
         id=card_data.card_id,
         type=card_data.card_type,
         status="Active",
-        balance=0.0,
+        balance=card_data.balance,  # Use provided balance instead of hardcoded 0.0
         customer_id=card_data.customer_id,
         issue_date=datetime.fromisoformat(card_data.issue_date.replace('Z', '+00:00'))
     )
