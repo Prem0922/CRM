@@ -4,6 +4,7 @@ from api import router
 from database import Base, engine
 from routers import auth
 import models
+from datetime import datetime
 
 app = FastAPI()
 
@@ -24,6 +25,41 @@ app.include_router(router)
 
 # Include auth router
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "CRM Backend", "timestamp": datetime.utcnow().isoformat()}
+
+# Test user endpoint
+@app.get("/test-user/{email}")
+async def test_user(email: str):
+    """Test if a user exists in the database"""
+    try:
+        from database import SessionLocal
+        from models import User
+        
+        db = SessionLocal()
+        user = db.query(User).filter(User.email == email).first()
+        db.close()
+        
+        if user:
+            return {
+                "status": "success",
+                "message": "User found",
+                "user": {
+                    "email": user.email,
+                    "name": user.name,
+                    "created_at": user.created_at.isoformat() if user.created_at else None
+                }
+            }
+        else:
+            return {
+                "status": "not_found",
+                "message": "User not found"
+            }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 # --- Admin endpoints for DB management ---
 @app.get("/admin/db-info")
