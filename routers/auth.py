@@ -53,14 +53,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-@router.get("/check-user/{email}")
-def check_user_exists(email: str, db: Session = Depends(get_db)):
-    """Check if a user with the given email already exists"""
-    user = db.query(User).filter(User.email == email).first()
-    if user:
-        return {"exists": True, "message": "User already exists"}
-    return {"exists": False, "message": "User does not exist"}
-
 @router.post("/signup", response_model=Token)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     # Check if user already exists
