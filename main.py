@@ -3,62 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from api import router
 from database import Base, engine
 from routers import auth
-from test_results import router as test_results_router
 import models
 
-app = FastAPI(
-    title="CRM Backend API",
-    description="CRM Backend API for Transit Management System with Test Results Integration",
-    version="1.0.0",
-    servers=[
-        {
-            "url": "https://crm-n577.onrender.com",
-            "description": "Production server (Render)"
-        },
-        {
-            "url": "http://localhost:8000",
-            "description": "Development server (Local)"
-        },
-        {
-            "url": "http://localhost:5000",
-            "description": "Local Reporting server (For testing)"
-        }
-    ],
-    openapi_tags=[
-        {
-            "name": "customers",
-            "description": "Customer management operations"
-        },
-        {
-            "name": "cards",
-            "description": "Card management operations"
-        },
-        {
-            "name": "trips",
-            "description": "Trip management operations"
-        },
-        {
-            "name": "cases",
-            "description": "Case management operations"
-        },
-        {
-            "name": "tap-history",
-            "description": "Tap history operations"
-        },
-        {
-            "name": "fare-disputes",
-            "description": "Fare dispute operations"
-        },
-        {
-            "name": "test-results",
-            "description": "Test results and UI Navigator integration"
-        },
-        {
-            "name": "admin",
-            "description": "Administrative operations"
-        }
-    ]
-)
+app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
@@ -78,11 +25,8 @@ app.include_router(router)
 # Include auth router
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
-# Include test results router
-app.include_router(test_results_router)
-
 # --- Admin endpoints for DB management ---
-@app.get("/admin/db-info", tags=["admin"])
+@app.get("/admin/db-info")
 def get_db_info():
     try:
         from database import engine
@@ -95,7 +39,7 @@ def get_db_info():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/admin/db-test", tags=["admin"])
+@app.get("/admin/db-test")
 def test_db_connection():
     try:
         from database import engine
@@ -111,7 +55,7 @@ def test_db_connection():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/admin/schema-info", tags=["admin"])
+@app.get("/admin/schema-info")
 def get_schema_info():
     try:
         from database import engine
@@ -143,7 +87,7 @@ def get_schema_info():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.post("/admin/generate-data", tags=["admin"])
+@app.post("/admin/generate-data")
 def generate_data():
     try:
         from generate_data import main as generate_main
@@ -152,7 +96,7 @@ def generate_data():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/admin/reset-db", tags=["admin"])
+@app.post("/admin/reset-db")
 def reset_database():
     try:
         from database import Base, engine
@@ -163,7 +107,7 @@ def reset_database():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/admin/delete-db", tags=["admin"])
+@app.post("/admin/delete-db")
 def delete_db():
     try:
         from delete_db import delete_database
