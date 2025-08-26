@@ -175,20 +175,57 @@ class FareDisputeResponse(FareDisputeBase):
     model_config = ConfigDict(from_attributes=True)
 
 # Customer endpoints
-@router.get("/customers/", response_model=List[CustomerResponse])
+@router.get("/customers/", response_model=List[CustomerResponse], tags=["customers"])
 def get_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    """
+    **Get Customers**
+    
+    Retrieve a list of all customers with pagination support.
+    
+    **Parameters:**
+    - `skip` (integer, optional): Number of records to skip (default: 0)
+    - `limit` (integer, optional): Maximum number of records to return (default: 100)
+    
+    **Returns:**
+    - Array of customer objects
+    """
     customers = db.query(Customer).offset(skip).limit(limit).all()
     return customers
 
-@router.get("/customers/{customer_id}", response_model=CustomerResponse)
+@router.get("/customers/{customer_id}", response_model=CustomerResponse, tags=["customers"])
 def get_customer(customer_id: str, db: Session = Depends(get_db)):
+    """
+    **Get Customer**
+    
+    Retrieve a specific customer by their ID.
+    
+    **Parameters:**
+    - `customer_id` (string, required): Customer identifier
+    
+    **Returns:**
+    - Customer object
+    """
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if customer is None:
         raise HTTPException(status_code=404, detail="Customer not found")
     return customer
 
-@router.post("/customers/", response_model=CustomerResponse)
+@router.post("/customers/", response_model=CustomerResponse, tags=["customers"])
 def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
+    """
+    **Create Customer**
+    
+    Create a new customer record.
+    
+    **Required Fields:**
+    - `name` (string): Customer name
+    - `email` (string): Customer email (must be valid format)
+    - `phone` (string): Customer phone number
+    - `notifications` (string): Notification preferences
+    
+    **Returns:**
+    - Created customer object
+    """
     try:
         # Check if customer with same email or name already exists
         existing_customer = db.query(Customer).filter(
@@ -240,20 +277,58 @@ def delete_customer(customer_id: str, db: Session = Depends(get_db)):
     return {"message": "Customer deleted successfully"}
 
 # Card endpoints
-@router.get("/cards/", response_model=List[CardResponse])
+@router.get("/cards/", response_model=List[CardResponse], tags=["cards"])
 def get_cards(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), api_key: str = Depends(verify_api_key)):
+    """
+    **Get Cards**
+    
+    Retrieve a list of all cards with pagination support.
+    
+    **Parameters:**
+    - `skip` (integer, optional): Number of records to skip (default: 0)
+    - `limit` (integer, optional): Maximum number of records to return (default: 100)
+    
+    **Returns:**
+    - Array of card objects
+    """
     cards = db.query(Card).offset(skip).limit(limit).all()
     return cards
 
-@router.get("/cards/{card_id}", response_model=CardResponse)
+@router.get("/cards/{card_id}", response_model=CardResponse, tags=["cards"])
 def get_card(card_id: str, db: Session = Depends(get_db)):
+    """
+    **Get Card**
+    
+    Retrieve a specific card by its ID.
+    
+    **Parameters:**
+    - `card_id` (string, required): Card identifier
+    
+    **Returns:**
+    - Card object
+    """
     card = db.query(Card).filter(Card.id == card_id).first()
     if card is None:
         raise HTTPException(status_code=404, detail="Card not found")
     return card
 
-@router.post("/cards/", response_model=CardResponse)
+@router.post("/cards/", response_model=CardResponse, tags=["cards"])
 def create_card(card: CardCreate, db: Session = Depends(get_db)):
+    """
+    **Create Card**
+    
+    Create a new card record.
+    
+    **Required Fields:**
+    - `id` (string): Card identifier
+    - `type` (string): Card type
+    - `status` (string): Card status
+    - `balance` (float): Card balance
+    - `customer_id` (string): Associated customer ID
+    
+    **Returns:**
+    - Created card object
+    """
     try:
         # Check if card with same ID already exists
         existing_card = db.query(Card).filter(Card.id == card.id).first()
@@ -316,20 +391,62 @@ def delete_card(card_id: str, db: Session = Depends(get_db)):
     return {"message": "Card deleted successfully"}
 
 # Trip endpoints
-@router.get("/trips/", response_model=List[TripResponse])
+@router.get("/trips/", response_model=List[TripResponse], tags=["trips"])
 def get_trips(skip: int = 0, db: Session = Depends(get_db)):
+    """
+    **Get Trips**
+    
+    Retrieve a list of all trips with pagination support.
+    
+    **Parameters:**
+    - `skip` (integer, optional): Number of records to skip (default: 0)
+    
+    **Returns:**
+    - Array of trip objects
+    """
     trips = db.query(Trip).offset(skip).all()
     return trips
 
-@router.get("/trips/{trip_id}", response_model=TripResponse)
+@router.get("/trips/{trip_id}", response_model=TripResponse, tags=["trips"])
 def get_trip(trip_id: str, db: Session = Depends(get_db)):
+    """
+    **Get Trip**
+    
+    Retrieve a specific trip by its ID.
+    
+    **Parameters:**
+    - `trip_id` (string, required): Trip identifier
+    
+    **Returns:**
+    - Trip object
+    """
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if trip is None:
         raise HTTPException(status_code=404, detail="Trip not found")
     return trip
 
-@router.post("/trips/", response_model=TripResponse)
+@router.post("/trips/", response_model=TripResponse, tags=["trips"])
 def create_trip(trip: TripCreate, db: Session = Depends(get_db)):
+    """
+    **Create Trip**
+    
+    Create a new trip record.
+    
+    **Required Fields:**
+    - `start_time` (datetime): Trip start time
+    - `end_time` (datetime): Trip end time
+    - `entry_location` (string): Entry location
+    - `exit_location` (string): Exit location
+    - `fare` (float): Trip fare
+    - `route` (string): Route information
+    - `operator` (string): Transit operator
+    - `transit_mode` (string): Transit mode (SubWay, Bus, Rail)
+    - `adjustable` (string): Whether fare is adjustable (Yes, No)
+    - `card_id` (string): Associated card ID
+    
+    **Returns:**
+    - Created trip object
+    """
     # Check if trip data includes an ID (for POS-generated trips)
     trip_data = trip.dict()
     trip_id = trip_data.pop('id', None)  # Remove id from data if present
@@ -373,20 +490,56 @@ def delete_trip(trip_id: str, db: Session = Depends(get_db)):
     return {"message": "Trip deleted successfully"}
 
 # Case endpoints
-@router.get("/cases/", response_model=List[CaseResponse])
+@router.get("/cases/", response_model=List[CaseResponse], tags=["cases"])
 def get_cases(db: Session = Depends(get_db)):
+    """
+    **Get Cases**
+    
+    Retrieve a list of all cases ordered by creation date.
+    
+    **Returns:**
+    - Array of case objects
+    """
     cases = db.query(Case).order_by(Case.created_date.desc()).all()
     return cases
 
-@router.get("/cases/{case_id}", response_model=CaseResponse)
+@router.get("/cases/{case_id}", response_model=CaseResponse, tags=["cases"])
 def get_case(case_id: str, db: Session = Depends(get_db)):
+    """
+    **Get Case**
+    
+    Retrieve a specific case by its ID.
+    
+    **Parameters:**
+    - `case_id` (string, required): Case identifier
+    
+    **Returns:**
+    - Case object
+    """
     case = db.query(Case).filter(Case.id == case_id).first()
     if case is None:
         raise HTTPException(status_code=404, detail="Case not found")
     return case
 
-@router.post("/cases/", response_model=CaseResponse)
+@router.post("/cases/", response_model=CaseResponse, tags=["cases"])
 def create_case(case: CaseCreate, db: Session = Depends(get_db)):
+    """
+    **Create Case**
+    
+    Create a new case record.
+    
+    **Required Fields:**
+    - `customer_id` (string): Associated customer ID
+    - `card_id` (string): Associated card ID
+    - `case_status` (string): Case status
+    - `priority` (string): Case priority
+    - `category` (string): Case category
+    - `assigned_agent` (string): Assigned agent
+    - `notes` (string): Case notes
+    
+    **Returns:**
+    - Created case object
+    """
     db_case = Case(
         id=f"CS{str(len(db.query(Case).all()) + 1).zfill(3)}",
         **case.dict(),
@@ -422,28 +575,69 @@ def delete_case(case_id: str, db: Session = Depends(get_db)):
     return {"message": "Case deleted successfully"}
 
 # Tap History endpoints
-@router.get("/tap-history/", response_model=List[TapHistoryResponse])
+@router.get("/tap-history/", response_model=List[TapHistoryResponse], tags=["tap-history"])
 def get_tap_history(
     skip: int = 0,
     limit: int = 100,
     customer_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
+    """
+    **Get Tap History**
+    
+    Retrieve a list of all tap history entries with pagination support.
+    
+    **Parameters:**
+    - `skip` (integer, optional): Number of records to skip (default: 0)
+    - `limit` (integer, optional): Maximum number of records to return (default: 100)
+    - `customer_id` (string, optional): Filter by customer ID
+    
+    **Returns:**
+    - Array of tap history objects
+    """
     query = db.query(TapHistory)
     if customer_id:
         query = query.filter(TapHistory.customer_id == customer_id)
     tap_history = query.offset(skip).limit(limit).all()
     return tap_history
 
-@router.get("/tap-history/{tap_id}", response_model=TapHistoryResponse)
+@router.get("/tap-history/{tap_id}", response_model=TapHistoryResponse, tags=["tap-history"])
 def get_tap_entry(tap_id: str, db: Session = Depends(get_db)):
+    """
+    **Get Tap Entry**
+    
+    Retrieve a specific tap history entry by its ID.
+    
+    **Parameters:**
+    - `tap_id` (string, required): Tap entry identifier
+    
+    **Returns:**
+    - Tap history object
+    """
     tap_entry = db.query(TapHistory).filter(TapHistory.id == tap_id).first()
     if tap_entry is None:
         raise HTTPException(status_code=404, detail="Tap history entry not found")
     return tap_entry
 
-@router.post("/tap-history/", response_model=TapHistoryResponse)
+@router.post("/tap-history/", response_model=TapHistoryResponse, tags=["tap-history"])
 def create_tap_entry(tap_entry: TapHistoryCreate, db: Session = Depends(get_db)):
+    """
+    **Create Tap Entry**
+    
+    Create a new tap history entry.
+    
+    **Required Fields:**
+    - `tap_time` (datetime): Tap time
+    - `location` (string): Tap location
+    - `device_id` (string): Device identifier
+    - `transit_mode` (string): Transit mode
+    - `direction` (string): Tap direction
+    - `customer_id` (string): Associated customer ID
+    - `result` (string): Tap result
+    
+    **Returns:**
+    - Created tap history object
+    """
     db_tap_entry = TapHistory(
         id=f"TH{str(len(db.query(TapHistory).all()) + 1).zfill(6)}",
         **tap_entry.dict()
@@ -477,13 +671,41 @@ def delete_tap_entry(tap_id: str, db: Session = Depends(get_db)):
     return {"message": "Tap history entry deleted successfully"}
 
 # Fare Dispute endpoints
-@router.get("/fare-disputes/", response_model=List[FareDisputeResponse])
+@router.get("/fare-disputes/", response_model=List[FareDisputeResponse], tags=["fare-disputes"])
 def get_fare_disputes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """
+    **Get Fare Disputes**
+    
+    Retrieve a list of all fare disputes with pagination support.
+    
+    **Parameters:**
+    - `skip` (integer, optional): Number of records to skip (default: 0)
+    - `limit` (integer, optional): Maximum number of records to return (default: 100)
+    
+    **Returns:**
+    - Array of fare dispute objects
+    """
     disputes = db.query(FareDispute).offset(skip).limit(limit).all()
     return disputes
 
-@router.post("/fare-disputes/", response_model=FareDisputeResponse)
+@router.post("/fare-disputes/", response_model=FareDisputeResponse, tags=["fare-disputes"])
 def create_fare_dispute(dispute: FareDisputeCreate, db: Session = Depends(get_db)):
+    """
+    **Create Fare Dispute**
+    
+    Create a new fare dispute record.
+    
+    **Required Fields:**
+    - `dispute_date` (datetime): Dispute date
+    - `card_id` (string): Associated card ID
+    - `amount` (float): Dispute amount
+    - `description` (string): Dispute description
+    - `trip_id` (string): Associated trip ID
+    - `dispute_type` (string): Type of dispute
+    
+    **Returns:**
+    - Created fare dispute object
+    """
     db_dispute = FareDispute(
         dispute_date=dispute.dispute_date,
         card_id=dispute.card_id,
@@ -562,7 +784,7 @@ def issue_card_api(card_data: IssueCardRequest, db: Session = Depends(get_db), a
             type=card_data.card_type,
             status="Active",
             balance=card_data.balance,  # Use provided balance instead of hardcoded 0.0
-            # Product field removed from Card model
+            product=card_data.load_product if hasattr(card_data, 'load_product') else None,  # Add product field
             customer_id=card_data.customer_id,
             issue_date=datetime.fromisoformat(card_data.issue_date.replace('Z', '+00:00'))
         )
@@ -637,7 +859,7 @@ def add_product_api(card_id: str, req: ProductAddRequest, db: Session = Depends(
             message=f"Product {req.product} added to card {card_id}",
             data={
                 "card_id": card.id,
-                "product": "N/A",
+                "product": card.product,
                 "new_balance": card.balance,
                 "value_added": req.value
             }
@@ -968,7 +1190,7 @@ def sync_card_to_crm(req: CardSyncRequest, db: Session = Depends(get_db)):
             card.balance += req.amount
             message = f"Card {req.card_id} reloaded with ${req.amount}"
         elif req.action == "add_product" and req.product:
-            # Product field removed from Card model
+            card.product = req.product
             if req.amount:
                 card.balance += req.amount
             message = f"Product {req.product} added to card {req.card_id}"
@@ -988,7 +1210,7 @@ def sync_card_to_crm(req: CardSyncRequest, db: Session = Depends(get_db)):
                 "card_id": card.id,
                 "balance": card.balance,
                 "status": card.status,
-                "product": "N/A"
+                "product": card.product
             }
         )
         
@@ -1092,7 +1314,7 @@ def get_crm_card_status(card_id: str, db: Session = Depends(get_db)):
                 "balance": card.balance,
                 "status": card.status,
                 "type": card.type,
-                "product": "N/A",
+                "product": card.product,
                 "issue_date": card.issue_date.isoformat(),
                 "customer_id": card.customer_id,
                 "customer_name": customer.name if customer else None
@@ -1145,7 +1367,7 @@ def get_crm_customer_status(customer_id: str, db: Session = Depends(get_db)):
                     "balance": card.balance,
                     "status": card.status,
                     "type": card.type,
-                    "product": "N/A"
+                    "product": card.product
                 } for card in cards],
                 "total_cards": len(cards),
                 "total_balance": sum(card.balance for card in cards)
