@@ -3,14 +3,67 @@ from fastapi.middleware.cors import CORSMiddleware
 from api import router
 from database import Base, engine
 from routers import auth
+from test_results import router as test_results_router
 import models
 
-app = FastAPI()
+app = FastAPI(
+    title="CRM Backend API",
+    description="CRM Backend API for Transit Management System with Test Results Integration",
+    version="1.0.0",
+    servers=[
+        {
+            "url": "https://crm-n577.onrender.com",
+            "description": "Production server (Render)"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Development server (Local)"
+        },
+        {
+            "url": "http://localhost:5000",
+            "description": "Local Reporting server (For testing)"
+        }
+    ],
+    openapi_tags=[
+        {
+            "name": "customers",
+            "description": "Customer management operations"
+        },
+        {
+            "name": "cards",
+            "description": "Card management operations"
+        },
+        {
+            "name": "trips",
+            "description": "Trip management operations"
+        },
+        {
+            "name": "cases",
+            "description": "Case management operations"
+        },
+        {
+            "name": "tap-history",
+            "description": "Tap history operations"
+        },
+        {
+            "name": "fare-disputes",
+            "description": "Fare dispute operations"
+        },
+        {
+            "name": "test-results",
+            "description": "Test results and UI Navigator integration"
+        },
+        {
+            "name": "admin",
+            "description": "Administrative operations"
+        }
+    ]
+)
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins temporarily for testing
+    allow_origins=["*"],  # Allow all origins for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,6 +77,9 @@ app.include_router(router)
 
 # Include auth router
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
+
+# Include test results router
+app.include_router(test_results_router)
 
 # --- Admin endpoints for DB management ---
 @app.get("/admin/db-info")
