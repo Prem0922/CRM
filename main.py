@@ -82,7 +82,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(test_results_router)
 
 # --- Admin endpoints for DB management ---
-@app.get("/admin/db-info")
+@app.get("/admin/db-info", tags=["admin"])
 def get_db_info():
     try:
         from database import engine
@@ -95,7 +95,7 @@ def get_db_info():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/admin/db-test")
+@app.get("/admin/db-test", tags=["admin"])
 def test_db_connection():
     try:
         from database import engine
@@ -111,7 +111,7 @@ def test_db_connection():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.get("/admin/schema-info")
+@app.get("/admin/schema-info", tags=["admin"])
 def get_schema_info():
     try:
         from database import engine
@@ -143,7 +143,7 @@ def get_schema_info():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-@app.post("/admin/generate-data")
+@app.post("/admin/generate-data", tags=["admin"])
 def generate_data():
     try:
         from generate_data import main as generate_main
@@ -152,7 +152,7 @@ def generate_data():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/admin/reset-db")
+@app.post("/admin/reset-db", tags=["admin"])
 def reset_database():
     try:
         from database import Base, engine
@@ -163,7 +163,7 @@ def reset_database():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/admin/delete-db")
+@app.post("/admin/delete-db", tags=["admin"])
 def delete_db():
     try:
         from delete_db import delete_database
